@@ -5,14 +5,23 @@ version=${SSH_ORIGINAL_COMMAND:-}
 cd /opt/weknora
 exec 9>/opt/weknora/deploy.lock
 flock -n 9 || exit 3
+# Use the short-lived Actions token only in an isolated temporary Docker config.
+registry_token=""
+IFS= read -r -t 5 registry_token || true
+if [ -n "$registry_token" ]; then
+ export DOCKER_CONFIG=$(mktemp -d /opt/weknora/.registry.XXXXXX)
+ trap 'rm -rf -- "$DOCKER_CONFIG"' EXIT
+ printf '%s\n' "$registry_token" | docker login ghcr.io -u demoasm --password-stdin >/dev/null
+ unset registry_token
+fi
 cat > release.next.yaml <<EOF
 services:
   app:
-    image: ghcr.io/demoasm/weknora-app:$version
+    image: ghcr.io/demoasm/mint-knowledge-app:$version
   frontend:
-    image: ghcr.io/demoasm/weknora-ui:$version
+    image: ghcr.io/demoasm/mint-knowledge-ui:$version
   docreader:
-    image: ghcr.io/demoasm/weknora-docreader:$version
+    image: ghcr.io/demoasm/mint-knowledge-docreader:$version
 EOF
 base=(docker compose -f docker-compose.yml -f compose.cloud.yaml)
 "${base[@]}" -f release.next.yaml pull app frontend docreader
