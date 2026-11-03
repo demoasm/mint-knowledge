@@ -7,10 +7,6 @@ on:
   workflow_dispatch:
     inputs:
       version:
-  workflow_run:
-    workflows: [Build Mint images]
-    types: [completed]
-    branches: [main]
         description: Full 40-character commit SHA from a successful Build Mint images run
         required: true
 permissions:
