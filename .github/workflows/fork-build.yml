@@ -1,5 +1,7 @@
 name: Build Mint images
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -34,7 +36,7 @@ jobs:
           file: ${{ matrix.file }}
           platforms: linux/amd64
           push: true
-          tags: ghcr.io/demoasm/weknora-${{ matrix.component }}:${{ github.sha }}
+          tags: ghcr.io/demoasm/mint-knowledge-${{ matrix.component }}:${{ github.sha }}
           cache-from: type=gha,scope=fork-${{ matrix.component }}
           cache-to: type=gha,scope=fork-${{ matrix.component }},mode=max
           build-args: |

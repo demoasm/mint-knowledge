@@ -1,9 +1,17 @@
 name: Deploy lightweight server
 on:
+  workflow_run:
+    workflows: [Build Mint images]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       version:
-        description: Full 40-character commit SHA from a successful Fork build images run
+  workflow_run:
+    workflows: [Build Mint images]
+    types: [completed]
+    branches: [main]
+        description: Full 40-character commit SHA from a successful Build Mint images run
         required: true
 permissions:
   contents: read
@@ -12,7 +20,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -22,7 +30,7 @@ jobs:
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ inputs.version || github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
           [[ "$VERSION" =~ ^[0-9a-f]{40}$ ]]

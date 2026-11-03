@@ -7,8 +7,8 @@
 - 本地源码：E:\mint-knowledge。
 - 现有本地凭据、运行数据及镜像缓存继续保留在 E:\WeKnora，禁止加入 Git。
 - 云端配置和数据保持在 /opt/weknora，不因仓库迁移而重新初始化。
-- GitHub Actions：Build Mint images 手动构建；Deploy lightweight server 手动选择完整提交 SHA 发布。
-- 当前沿用已有 ghcr.io/demoasm/weknora-* 镜像路径，不移动或删除现有包。
+- GitHub Actions：main 提交自动构建镜像，成功后自动发布；也支持手动选择完整提交 SHA 发布。
+- 新版本使用 ghcr.io/demoasm/mint-knowledge-*；旧镜像保留供回退。
 
 ## 开源声明
 

@@ -8,11 +8,11 @@ flock -n 9 || exit 3
 cat > release.next.yaml <<EOF
 services:
   app:
-    image: ghcr.io/demoasm/weknora-app:$version
+    image: ghcr.io/demoasm/mint-knowledge-app:$version
   frontend:
-    image: ghcr.io/demoasm/weknora-ui:$version
+    image: ghcr.io/demoasm/mint-knowledge-ui:$version
   docreader:
-    image: ghcr.io/demoasm/weknora-docreader:$version
+    image: ghcr.io/demoasm/mint-knowledge-docreader:$version
 EOF
 base=(docker compose -f docker-compose.yml -f compose.cloud.yaml)
 "${base[@]}" -f release.next.yaml pull app frontend docreader
