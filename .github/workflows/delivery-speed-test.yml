@@ -1,0 +1,43 @@
+name: Measure SSH image delivery
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    if: github.ref == 'refs/heads/main'
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-22.04, ubuntu-24.04]
+        qos: [default, none]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 6
+    environment: production
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      PROBE_QOS: ${{ matrix.qos }}
+      PROBE_RUNNER: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Send a disposable 1 MiB image without deploying services
+        run: |
+          set -euo pipefail
+          source deploy/cloud/ssh-client.sh
+          if [[ "$PROBE_QOS" == none ]]; then SSH+=(-o IPQoS=none); fi
+          probe=$(printf '%s' "$GITHUB_RUN_ID-$PROBE_RUNNER-$PROBE_QOS" | sha256sum | cut -c1-40)
+          image="ghcr.io/demoasm/mint-knowledge-ui:$probe"
+          mkdir -p "$RUNNER_TEMP/probe"
+          head -c 1048576 /dev/urandom > "$RUNNER_TEMP/probe/payload"
+          printf 'FROM scratch\nCOPY payload /payload\n' > "$RUNNER_TEMP/probe/Dockerfile"
+          docker build -t "$image" "$RUNNER_TEMP/probe"
+          docker save "$image" | gzip -1 > "$RUNNER_TEMP/probe.tar.gz"
+          size=$(stat -c %s "$RUNNER_TEMP/probe.tar.gz")
+          checksum=$(sha256sum "$RUNNER_TEMP/probe.tar.gz" | cut -d' ' -f1)
+          started=$(date +%s)
+          timeout 180 "${SSH[@]}" "$REMOTE" "receive $probe frontend $checksum $size" < "$RUNNER_TEMP/probe.tar.gz"
+          elapsed=$(($(date +%s)-started))
+          echo "SSH_PROBE runner=$PROBE_RUNNER qos=$PROBE_QOS bytes=$size seconds=$elapsed"
