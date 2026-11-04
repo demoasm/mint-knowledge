@@ -7,6 +7,9 @@ mkdir -p /opt/weknora /tmp/mock-bin
 cat > /tmp/mock-bin/docker <<'MOCK'
 #!/bin/bash
 printf '%s\n' "$*" >> /tmp/docker-calls
+if [[ "$1 $2" == 'buildx inspect' && "$*" != *--bootstrap* ]]; then exit 1; fi
+if [[ "$1 $2" == 'buildx build' && "${MOCK_FAIL_BUILD:-0}" == 1 ]]; then exit 1; fi
+if [[ "$1" == push && "${MOCK_FAIL_PUSH:-0}" == 1 ]]; then exit 1; fi
 if [[ "$1" == login ]]; then
  [[ "$(cat)" == test-password && "${MOCK_FAIL_LOGIN:-0}" != 1 ]] || exit 1
  exit 0
@@ -139,3 +142,49 @@ grep -q 'push ccr.ccs.tencentyun.com/tcb-100006345097-fwhd/git:bootstrap-ui-' /t
 ! grep -q ' up ' /tmp/docker-calls
 [[ -z $(find . -maxdepth 1 -type d -name '.tcb-auth.*' -print -quit) ]]
 echo 'PASS: TCB bootstrap seeds cached layers without changing release or services'
+
+# Source-build protocol: isolate Git, swap and Docker operations in this fixture.
+cp "$source_dir/server-build.sh" /opt/weknora/server-build.sh
+cp "$source_dir/buildkitd.toml" /opt/weknora/buildkitd.toml
+cat > /tmp/mock-bin/git <<'MOCK'
+#!/bin/bash
+printf '%s\n' "$*" >> /tmp/git-calls
+case "$*" in
+ *fetch*) [[ "${MOCK_FAIL_FETCH:-0}" != 1 ]] ;;
+ *rev-parse*) printf '%s\n' aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ;;
+ *status*) [[ "${MOCK_DIRTY:-0}" != 1 ]] || echo dirty ;;
+ 'init --bare '*) mkdir -p "${@: -1}" ;;
+ *'worktree add --detach '*) mkdir -p "${@: -2:1}"; touch "${@: -2:1}/.git" ;;
+esac
+MOCK
+for tool in fallocate mkswap swapon; do
+ printf '#!/bin/bash\nexit 0\n' > "/tmp/mock-bin/$tool"
+done
+chmod +x /tmp/mock-bin/*
+for flag in MOCK_FAIL_FETCH MOCK_DIRTY MOCK_FAIL_BUILD MOCK_FAIL_PUSH; do
+ reset_release
+ if printf '%s\n' test-password | env "$flag=1" SSH_ORIGINAL_COMMAND="build $version app,frontend" bash "$source_dir/deploy.sh"; then exit 1; fi
+ [[ "$(sha256sum release.yaml)" == "$before" && $(cat current-source) == old ]]
+ ! grep -q ' up ' /tmp/docker-calls
+ [[ -z $(find . -maxdepth 1 -type d -name '.tcb-auth.*' -print -quit) ]]
+done
+reset_release
+printf '%s\n' test-password | SSH_ORIGINAL_COMMAND="build $version app,frontend" bash "$source_dir/deploy.sh"
+python3 - <<'PYTEST'
+import json
+calls=open('/tmp/docker-calls').read().splitlines()
+builds=[i for i,c in enumerate(calls) if c.startswith('buildx build ')]
+pushes=[i for i,c in enumerate(calls) if c.startswith('push ')]
+up=next(i for i,c in enumerate(calls) if ' up ' in c)
+assert len(builds)==len(pushes)==2
+assert builds[0]<pushes[0]<builds[1]<pushes[1]<up
+assert not any(c.startswith('pull ') for c in calls)
+assert any('--driver-opt memory=1800m' in c and '--driver-opt cpu-quota=100000' in c for c in calls)
+assert any('exec -T postgres' in c for c in calls)
+r=json.load(open('release.yaml'))['services']
+assert r['docreader']['image']=='pinned-docreader:old'
+assert r['app']['image'].endswith(':app-'+'a'*40)
+assert r['frontend']['image'].endswith(':ui-'+'a'*40)
+assert 'https://github.com/demoasm/mint-knowledge.git' in open('/tmp/git-calls').read()
+print('PASS: server builds and TCB backups precede deployment; failures preserve the active release')
+PYTEST

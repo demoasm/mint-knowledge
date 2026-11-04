@@ -84,12 +84,16 @@ PYMANIFEST
  echo "Image ready: $version $component ($size bytes, SHA256 verified)"
  exit 0
 fi
-[[ "$command" =~ ^(deploy|tcb)\ ([0-9a-f]{40})\ ((app|frontend|docreader)(,(app|frontend|docreader))*)$ ]] || exit 2
+[[ "$command" =~ ^(deploy|tcb|build)\ ([0-9a-f]{40})\ ((app|frontend|docreader)(,(app|frontend|docreader))*)$ ]] || exit 2
 transport=${BASH_REMATCH[1]}; version=${BASH_REMATCH[2]}; components=${BASH_REMATCH[3]}
 IFS=, read -r -a services <<< "$components"
 exec 9>/opt/weknora/deploy.lock
 flock -w 60 9 || exit 3
-if [[ "$transport" == tcb ]]; then login_tcb; fi
+if [[ "$transport" == tcb || "$transport" == build ]]; then login_tcb; fi
+if [[ "$transport" == build ]]; then
+ source /opt/weknora/server-build.sh
+ build_release_from_source "$version" "$components"
+fi
 python3 - "$version" "$components" "$transport" <<'PY'
 import json,re,sys
 from pathlib import Path
@@ -102,7 +106,7 @@ if set(release.get('services',{})) != {'app','frontend','docreader'}:
     raise SystemExit('Invalid existing release; refusing to lose component pins')
 for service in sys.argv[2].split(','):
     component='ui' if service=='frontend' else service
-    if sys.argv[3]=='tcb':
+    if sys.argv[3] in ('tcb','build'):
         image=f'ccr.ccs.tencentyun.com/tcb-100006345097-fwhd/git:{component}-{sys.argv[1]}'
     else:
         image=f'ghcr.io/demoasm/mint-knowledge-{component}:{sys.argv[1]}'
@@ -122,6 +126,9 @@ for service in "${services[@]}"; do
    sleep 5
   done
   $pulled || { echo "TCB pull failed: $service" >&2; exit 1; }
+  expected_images[$service]=$(docker image inspect "$image" --format '{{.Id}}')
+ elif [[ "$transport" == build ]]; then
+  image="$tcb_repo:$component-$version"
   expected_images[$service]=$(docker image inspect "$image" --format '{{.Id}}')
  else
   # Retain the validated SSH import protocol for already-imported releases.
