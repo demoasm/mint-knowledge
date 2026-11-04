@@ -3,38 +3,48 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Full 40-character commit SHA from a successful Build Mint images run
+        description: Full 40-character commit SHA of existing GHCR images (including rollback)
         required: true
       components:
         description: Comma-separated services to update (app,frontend,docreader)
-        default: app,frontend,docreader
+        default: app,frontend
         required: true
 permissions:
   contents: read
   packages: read
 concurrency:
-  group: production-deploy
+  group: mint-production-deploy
   cancel-in-progress: false
 jobs:
   deploy:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     environment: production
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      COMPONENTS: ${{ inputs.components }}
+      VERSION: ${{ inputs.version }}
     steps:
-      - name: Deploy selected release
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-          REGISTRY_TOKEN: ${{ github.token }}
-          COMPONENTS: ${{ inputs.components }}
-          VERSION: ${{ inputs.version || github.event.workflow_run.head_sha }}
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Transfer selected release and deploy
         run: |
           set -euo pipefail
           [[ "$VERSION" =~ ^[0-9a-f]{40}$ ]]
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          printf '%s\n' "$REGISTRY_TOKEN" | ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "$VERSION $COMPONENTS"
+          [[ "$COMPONENTS" =~ ^(app|frontend|docreader)(,(app|frontend|docreader))*$ ]]
+          IFS=, read -r -a services <<< "$COMPONENTS"
+          for service in "${services[@]}"; do
+            component=$service
+            [[ "$service" != frontend ]] || component=ui
+            bash deploy/cloud/send-image.sh "$VERSION" "$component"
+          done
+          source deploy/cloud/ssh-client.sh
+          timeout 480 "${SSH[@]}" "$REMOTE" "deploy $VERSION $COMPONENTS"

@@ -19,6 +19,11 @@ else:
         if f.startswith(('internal/','cmd/','config/','third_party/','patches/','scripts/','docker/Dockerfile.app')) or f in ('go.mod','go.sum','Makefile','VERSION','LICENSE','THIRD_PARTY_NOTICES.md') or f.startswith('licenses/'):
             selected.add('app')
         if f in ('.dockerignore','.gitattributes'): selected.update(all_components)
+requested=sys.argv[3] if len(sys.argv)>3 else 'auto'
+if requested != 'auto':
+    selected=set('ui' if c=='frontend' else c for c in requested.split(','))
+    if not selected or not selected.issubset(set(all_components)):
+        raise SystemExit('Invalid component selection')
 rows=[]
 for c in all_components:
     if c in selected:
