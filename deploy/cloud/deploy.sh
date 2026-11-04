@@ -93,6 +93,8 @@ if [[ "$transport" == tcb || "$transport" == build ]]; then login_tcb; fi
 if [[ "$transport" == build ]]; then
  source /opt/weknora/server-build.sh
  build_release_from_source "$version" "$components"
+ echo "Build and TCB backup complete; manual deployment required: $version ($components)"
+ exit 0
 fi
 python3 - "$version" "$components" "$transport" <<'PY'
 import json,re,sys

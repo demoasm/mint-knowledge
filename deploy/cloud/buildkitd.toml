@@ -1,7 +1,9 @@
 [worker.oci]
   max-parallelism = 1
   gc = true
-  gckeepstorage = 6000
+  reservedSpace = "6GB"
+  maxUsedSpace = "10GB"
+  minFreeSpace = "3GB"
 
 [registry."docker.io"]
   mirrors = ["mirror.ccs.tencentyun.com"]

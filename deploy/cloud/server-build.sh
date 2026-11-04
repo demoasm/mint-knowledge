@@ -5,7 +5,9 @@ prepare_build_host() {
  mkdir -p "$root/sources" "$root/logs" "$root/buildx"
  local available
  available=$(df -PB1 "$root" | awk 'NR==2 {print $4}')
- (( available > 8589934592 )) || { echo 'Source build requires at least 8 GiB free disk' >&2; return 1; }
+ local minimum=8589934592
+ [[ ! -d "$root/buildx/instances" ]] || minimum=2147483648
+ (( available > minimum )) || { echo 'Insufficient disk: first build needs 8 GiB; cached build needs 2 GiB free' >&2; return 1; }
  if [[ "$(awk '/SwapTotal/ {print $2}' /proc/meminfo)" == 0 ]]; then
   if [[ ! -e "$root/swapfile" ]]; then
    fallocate -l 2G "$root/swapfile"
@@ -72,5 +74,8 @@ build_release_from_source() {
   echo "Server build completed: $service in $((SECONDS-started))s"
   timeout 600 docker push "$image"
   echo "TCB backup complete: $image"
+  mkdir -p "$root/built/$version"
+  docker image inspect "$image" --format '{{.Id}}' > "$root/built/$version/$service.ready.next"
+  mv "$root/built/$version/$service.ready.next" "$root/built/$version/$service.ready"
  done
 }
