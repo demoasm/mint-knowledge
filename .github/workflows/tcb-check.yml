@@ -1,0 +1,38 @@
+name: Check TCB push and server pull
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    environment: production
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      TCB_PASSWORD: ${{ secrets.TCB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ccr.ccs.tencentyun.com
+          username: '100006345097'
+          password: ${{ secrets.TCB_PASSWORD }}
+      - name: Push a 1 MiB probe and pull it on the server without deployment
+        run: |
+          set -euo pipefail
+          tag="probe-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          image="ccr.ccs.tencentyun.com/tcb-100006345097-fwhd/git:$tag"
+          mkdir -p "$RUNNER_TEMP/tcb-probe"
+          head -c 1048576 /dev/urandom > "$RUNNER_TEMP/tcb-probe/payload"
+          printf 'FROM scratch\nCOPY payload /payload\n' > "$RUNNER_TEMP/tcb-probe/Dockerfile"
+          docker build -t "$image" "$RUNNER_TEMP/tcb-probe"
+          started=$SECONDS
+          timeout 180 docker push "$image"
+          echo "TCB runner push completed in $((SECONDS-started))s"
+          source deploy/cloud/ssh-client.sh
+          printf '%s\n' "$TCB_PASSWORD" | timeout 180 "${SSH[@]}" "$REMOTE" "tcb-probe $tag"

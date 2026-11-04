@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Test component selection and SSH delivery protocol
+      - name: Test component selection and deployment protocol
         run: |
           python3 -m unittest discover -s deploy/cloud -p 'test_*.py'
           sudo bash deploy/cloud/test_deploy.sh
@@ -68,28 +68,31 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Login to Tencent TCB registry
+        uses: docker/login-action@v3
+        with:
+          registry: ccr.ccs.tencentyun.com
+          username: '100006345097'
+          password: ${{ secrets.TCB_PASSWORD }}
       - uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.file }}
           platforms: linux/amd64
           push: true
-          load: true
-          tags: ghcr.io/demoasm/mint-knowledge-${{ matrix.component }}:${{ github.sha }}
+          tags: |
+            ghcr.io/demoasm/mint-knowledge-${{ matrix.component }}:${{ github.sha }}
+            ccr.ccs.tencentyun.com/tcb-100006345097-fwhd/git:${{ matrix.component }}-${{ github.sha }}
           cache-from: type=gha,scope=fork-${{ matrix.component }}
           cache-to: type=gha,scope=fork-${{ matrix.component }},mode=max
           build-args: |
             GOPROXY_ARG=https://proxy.golang.org,direct
             APK_MIRROR_ARG=
-      - name: Deliver built image directly over SSH
-        env:
-          COMPONENT: ${{ matrix.component }}
-        run: bash deploy/cloud/send-image.sh "$GITHUB_SHA" "$COMPONENT"
   deploy:
     needs: [changes, build]
     if: needs.changes.outputs.changed == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     environment: production
     concurrency:
       group: mint-production-deploy
@@ -100,9 +103,10 @@ jobs:
       DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
       DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
       COMPONENTS: ${{ needs.changes.outputs.components }}
+      TCB_PASSWORD: ${{ secrets.TCB_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy delivered images without registry pulls
+      - name: Deploy selected images from Tencent TCB
         run: |
           set -euo pipefail
           latest=$(git ls-remote origin refs/heads/main | cut -f1)
@@ -111,4 +115,4 @@ jobs:
             exit 0
           fi
           source deploy/cloud/ssh-client.sh
-          timeout 480 "${SSH[@]}" "$REMOTE" "deploy $GITHUB_SHA $COMPONENTS"
+          printf '%s\n' "$TCB_PASSWORD" | timeout 1000 "${SSH[@]}" "$REMOTE" "tcb $GITHUB_SHA $COMPONENTS"
