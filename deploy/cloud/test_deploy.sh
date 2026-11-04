@@ -7,7 +7,15 @@ mkdir -p /opt/weknora /tmp/mock-bin
 cat > /tmp/mock-bin/docker <<'MOCK'
 #!/bin/bash
 printf '%s\n' "$*" >> /tmp/docker-calls
-if [[ "$*" == *' pull '* ]]; then echo 'Registry pull forbidden' >&2; exit 99; fi
+if [[ "$1" == login ]]; then
+ [[ "$(cat)" == test-password && "${MOCK_FAIL_LOGIN:-0}" != 1 ]] || exit 1
+ exit 0
+fi
+if [[ "$1" == pull ]]; then
+ [[ "$2" == ccr.ccs.tencentyun.com/tcb-100006345097-fwhd/git:* && "${MOCK_FAIL_PULL:-0}" != 1 ]] || exit 1
+ exit 0
+fi
+if [[ "$*" == *' pull '* ]]; then echo 'Unexpected compose pull' >&2; exit 99; fi
 if [[ "$1 $2" == 'image inspect' || "$1" == inspect ]]; then echo 'sha256:test-image'; exit 0; fi
 if [[ "$1" == load && "${MOCK_FAIL_LOAD:-0}" == 1 ]]; then exit 1; fi
 if [[ "$*" == *' ps -q '* ]]; then echo test-container; fi
@@ -91,3 +99,34 @@ if MOCK_FAIL_UP=1 SSH_ORIGINAL_COMMAND="deploy $version frontend" bash "$source_
 [[ $(sha256sum release.yaml) == "$before" && $(cat current-source) == old ]]
 [[ $(grep -c 'up -d --no-deps --no-build --pull never frontend' /tmp/docker-calls) == 2 ]]
 echo 'PASS: checksum/truncation/tag/load failures rejected; missing imports blocked; app backup and rollback preserved'
+
+# TCB mode must pull only selected services from the fixed registry, and must
+# reject login/pull failures before modifying the active release.
+reset_release
+if printf '%s\n' test-password | MOCK_FAIL_LOGIN=1 SSH_ORIGINAL_COMMAND="tcb $version frontend" bash "$source_dir/deploy.sh"; then exit 1; fi
+[[ "$(sha256sum release.yaml)" == "$before" && $(cat current-source) == old ]]
+[[ ! -e .tcb-auth.* ]]
+reset_release
+if printf '%s\n' test-password | MOCK_FAIL_PULL=1 SSH_ORIGINAL_COMMAND="tcb $version frontend" bash "$source_dir/deploy.sh"; then exit 1; fi
+[[ "$(sha256sum release.yaml)" == "$before" && $(cat current-source) == old ]]
+reset_release
+printf '%s\n' test-password | SSH_ORIGINAL_COMMAND="tcb $version frontend" bash "$source_dir/deploy.sh"
+python3 - <<'PY'
+import json
+r=json.load(open('release.yaml'))['services']
+assert r['app']['image']=='pinned-app:old'
+assert r['docreader']['image']=='pinned-docreader:old'
+assert r['frontend']['image']=='ccr.ccs.tencentyun.com/tcb-100006345097-fwhd/git:ui-'+'a'*40
+calls=open('/tmp/docker-calls').read().splitlines()
+assert any(c.startswith('pull ccr.ccs.tencentyun.com/') for c in calls)
+assert not any('ghcr.io' in c or 'exec -T postgres' in c for c in calls)
+assert not any('test-password' in c for c in calls)
+print('PASS: TCB login/pull failure preserves release; UI-only TCB deployment preserves other pins')
+PY
+[[ -z $(find . -maxdepth 1 -type d -name '.tcb-auth.*' -print -quit) ]]
+reset_release
+printf '%s\n' test-password | SSH_ORIGINAL_COMMAND='tcb-probe probe-123-1' bash "$source_dir/deploy.sh"
+[[ "$(sha256sum release.yaml)" == "$before" && $(cat current-source) == old ]]
+! grep -q ' up ' /tmp/docker-calls
+[[ -z $(find . -maxdepth 1 -type d -name '.tcb-auth.*' -print -quit) ]]
+echo 'PASS: TCB probe changes no services and leaves no registry credential config'
