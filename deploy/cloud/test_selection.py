@@ -11,6 +11,7 @@ class SelectionTests(unittest.TestCase):
   return values['components'],json.loads(values['matrix'])['include']
  def test_ui_only(self): self.assertEqual(self.selected('frontend/src/App.vue\n')[0],'frontend')
  def test_app_only(self): self.assertEqual(self.selected('internal/handler/model.go\n')[0],'app')
+ def test_native_recipe(self): self.assertEqual(self.selected('deploy/cloud/native-artifacts.sh\n')[0],'app')
  def test_parser_only(self): self.assertEqual(self.selected('docreader/requirements.txt\n')[0],'docreader')
  def test_forced_components(self): self.assertEqual(self.selected('', 'app,frontend')[0], 'app,frontend')
  def test_invalid_override(self):
