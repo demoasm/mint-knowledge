@@ -18,6 +18,26 @@ login_tcb() {
  printf '%s\n' "$password" | timeout 30 docker login ccr.ccs.tencentyun.com --username 100006345097 --password-stdin >/dev/null
  unset password
 }
+# One-time registry migration: seed cached production layers from within
+# Tencent Cloud. Only new bootstrap tags are created; no containers are changed.
+if [[ "$command" =~ ^tcb-bootstrap\ ((app|frontend)(,(app|frontend))*)$ ]]; then
+ IFS=, read -r -a seed_services <<< "${BASH_REMATCH[1]}"
+ login_tcb
+ base=(docker compose -f docker-compose.yml -f compose.cloud.yaml -f release.yaml)
+ for service in "${seed_services[@]}"; do
+  cid=$("${base[@]}" ps -q "$service")
+  [[ -n "$cid" ]] || exit 1
+  image_id=$(docker inspect "$cid" --format '{{.Image}}')
+  component=$service
+  [[ "$service" != frontend ]] || component=ui
+  image="$tcb_repo:bootstrap-$component-${image_id#sha256:}"
+  docker tag "$image_id" "$image"
+  started=$SECONDS
+  timeout 600 docker push "$image"
+  echo "TCB cache seeded: $service in $((SECONDS-started))s; no services changed"
+ done
+ exit 0
+fi
 if [[ "$command" =~ ^tcb-probe\ (probe-[0-9]{1,20}-[0-9]{1,3})$ ]]; then
  tag=${BASH_REMATCH[1]}
  login_tcb

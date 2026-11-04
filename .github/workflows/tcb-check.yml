@@ -1,13 +1,18 @@
 name: Check TCB push and server pull
 on:
   workflow_dispatch:
+    inputs:
+      bootstrap:
+        description: Seed TCB from existing server image cache without deploying services
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   check:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 15
     environment: production
     env:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
@@ -22,7 +27,14 @@ jobs:
           registry: ccr.ccs.tencentyun.com
           username: '100006345097'
           password: ${{ secrets.TCB_PASSWORD }}
+      - name: Seed TCB using existing server image layers without deployment
+        if: inputs.bootstrap
+        run: |
+          set -euo pipefail
+          source deploy/cloud/ssh-client.sh
+          printf '%s\n' "$TCB_PASSWORD" | timeout 700 "${SSH[@]}" "$REMOTE" "tcb-bootstrap app,frontend"
       - name: Push a 1 MiB probe and pull it on the server without deployment
+        if: ${{ !inputs.bootstrap }}
         run: |
           set -euo pipefail
           tag="probe-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"

@@ -17,3 +17,5 @@ Actions 经现有受限 SSH 部署密钥将密码从 stdin 传入服务器。服
 服务器固定入口仍为 `/opt/weknora/ci-deploy.sh`，原受限密钥不变。新增协议 `tcb SHA services` 和 `tcb-probe probe-run-attempt` 只允许固定仓库和合法标签；原 `receive`/`deploy` 直传协议保留以兼容已导入版本。主流水线不再经 SSH 传输大镜像。
 
 在隔离环境运行 `bash deploy/cloud/test_deploy.sh` 和组件选择单元测试；不要在生产目录执行测试脚本。
+
+首次迁移若 Actions 跨境上传大基础层过慢，可在 Check TCB 工作流启用 bootstrap：服务器把当前运行镜像缓存推到固定仓库 bootstrap 标签，仅预热镜像层，不更新发布版本、不重启容器。后续 Actions 推送可复用相同层；新应用层仍需正常上传。
