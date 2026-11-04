@@ -1,4 +1,4 @@
-name: Build and deploy on server
+name: Build images on server
 on:
   push:
     branches: [main]
@@ -12,7 +12,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: mint-main-delivery
+  group: mint-main-build
   cancel-in-progress: false
 jobs:
   changes:
@@ -45,31 +45,38 @@ jobs:
           source deploy/cloud/ssh-client.sh
           base=$(timeout 30 "${SSH[@]}" "$REMOTE" status)
           python3 deploy/cloud/select-components.py "$base" "$GITHUB_SHA" "$REQUESTED_COMPONENTS" >> "$GITHUB_OUTPUT"
-  deploy:
+  build:
     needs: changes
     if: needs.changes.outputs.changed == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 75
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix: ${{ fromJson(needs.changes.outputs.matrix) }}
     environment: production
     concurrency:
-      group: mint-production-deploy
+      group: mint-server-build-${{ matrix.component }}
       cancel-in-progress: false
     env:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
       DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
       DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
       DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-      COMPONENTS: ${{ needs.changes.outputs.components }}
+      COMPONENTS: ${{ matrix.component == 'ui' && 'frontend' || matrix.component }}
       TCB_PASSWORD: ${{ secrets.TCB_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
-      - name: Build selected components on server, back up to TCB and deploy
+      - name: Build ${{ matrix.component }} on server and back up to TCB
         run: |
           set -euo pipefail
           latest=$(git ls-remote origin refs/heads/main | cut -f1)
           if [[ "$latest" != "$GITHUB_SHA" ]]; then
-            echo "Skip superseded automatic deployment: $GITHUB_SHA (main is $latest)"
+            echo "Skip superseded automatic build: $GITHUB_SHA (main is $latest)"
             exit 0
           fi
           source deploy/cloud/ssh-client.sh
-          printf '%s\n' "$TCB_PASSWORD" | timeout 7000 "${SSH[@]}" "$REMOTE" "build $GITHUB_SHA $COMPONENTS"
+          printf '%s\n' "$TCB_PASSWORD" | timeout 4300 "${SSH[@]}" "$REMOTE" "build $GITHUB_SHA $COMPONENTS"
+          echo "### Built ${COMPONENTS}: ${GITHUB_SHA}" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Image backed up to TCB. No running service was changed.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Use **Deploy lightweight server** with this full SHA and component to release manually.' >> "$GITHUB_STEP_SUMMARY"

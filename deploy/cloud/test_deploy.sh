@@ -175,16 +175,18 @@ import json
 calls=open('/tmp/docker-calls').read().splitlines()
 builds=[i for i,c in enumerate(calls) if c.startswith('buildx build ')]
 pushes=[i for i,c in enumerate(calls) if c.startswith('push ')]
-up=next(i for i,c in enumerate(calls) if ' up ' in c)
 assert len(builds)==len(pushes)==2
-assert builds[0]<pushes[0]<builds[1]<pushes[1]<up
-assert not any(c.startswith('pull ') for c in calls)
+assert builds[0]<pushes[0]<builds[1]<pushes[1]
+assert not any(' up ' in c or 'exec -T postgres' in c or c.startswith('pull ') for c in calls)
 assert any('--driver-opt memory=1800m' in c and '--driver-opt cpu-quota=100000' in c for c in calls)
-assert any('exec -T postgres' in c for c in calls)
 r=json.load(open('release.yaml'))['services']
 assert r['docreader']['image']=='pinned-docreader:old'
-assert r['app']['image'].endswith(':app-'+'a'*40)
-assert r['frontend']['image'].endswith(':ui-'+'a'*40)
+assert r['app']['image']=='pinned-app:old'
+assert r['frontend']['image']=='pinned-ui:old'
+assert open('current-source').read().strip()=='old'
 assert 'https://github.com/demoasm/mint-knowledge.git' in open('/tmp/git-calls').read()
-print('PASS: server builds and TCB backups precede deployment; failures preserve the active release')
+from pathlib import Path
+assert Path('/opt/mint-knowledge-build/built/'+'a'*40+'/app.ready').exists()
+assert Path('/opt/mint-knowledge-build/built/'+'a'*40+'/frontend.ready').exists()
+print('PASS: source builds back up separate images but NEVER deploy or alter release/current-source')
 PYTEST
