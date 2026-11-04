@@ -69,21 +69,6 @@ ENV VERSION=${VERSION_ARG}
 ENV COMMIT_ID=${COMMIT_ID_ARG}
 ENV BUILD_TIME=${BUILD_TIME_ARG}
 
-# Link the anydoc parser engine (office docs converted in-process, no
-# Python docreader). Default on so Hub / compose images ship a working
-# engine; pass WITH_ANYDOC=0 to skip the Rust toolchain (~few minutes and
-# ~1 GB of build-stage layers).
-ARG WITH_ANYDOC=1
-ENV RUSTUP_HOME=/usr/local/rustup CARGO_HOME=/usr/local/cargo
-ENV PATH=/usr/local/cargo/bin:$PATH
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    if [ "$WITH_ANYDOC" = "1" ]; then \
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-            | sh -s -- -y --profile minimal --default-toolchain stable && \
-        ./scripts/build-anydoc-lib.sh; \
-    fi
-
 # Build the application with version info. Mount the Go build cache as well as
 # the module cache: `COPY . .` invalidates this layer on every source change,
 # and without the mount each rebuild regenerates the whole compile cache inside

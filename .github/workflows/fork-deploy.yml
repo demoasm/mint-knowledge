@@ -1,9 +1,5 @@
 name: Deploy lightweight server
 on:
-  workflow_run:
-    workflows: [Build Mint images]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
     inputs:
       version:
