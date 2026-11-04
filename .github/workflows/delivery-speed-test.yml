@@ -9,8 +9,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [ubuntu-22.04, ubuntu-24.04]
-        qos: [default, none]
+        runner: [ubuntu-24.04]
+        qos: [default, bbr]
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 6
     environment: production
@@ -27,7 +27,10 @@ jobs:
         run: |
           set -euo pipefail
           source deploy/cloud/ssh-client.sh
-          if [[ "$PROBE_QOS" == none ]]; then SSH+=(-o IPQoS=none); fi
+          if [[ "$PROBE_QOS" == bbr ]]; then
+            sudo modprobe tcp_bbr
+            sudo sysctl -w net.core.default_qdisc=fq net.ipv4.tcp_congestion_control=bbr
+          fi
           probe=$(printf '%s' "$GITHUB_RUN_ID-$PROBE_RUNNER-$PROBE_QOS" | sha256sum | cut -c1-40)
           image="ghcr.io/demoasm/mint-knowledge-ui:$probe"
           mkdir -p "$RUNNER_TEMP/probe"
