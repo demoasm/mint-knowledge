@@ -1,5 +1,9 @@
+# Override with content-addressed TCB artifact images on the build server.
+# Without overrides, local builds compile the matching source stages below.
+ARG BROWSERSKILL_IMAGE=browserskill-artifacts
+ARG ANYDOC_IMAGE=anydoc-artifacts
 # Build extension and daemon from the same pinned source on the runtime architecture.
-FROM --platform=$TARGETPLATFORM node:24-bookworm-slim@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e AS browserskill
+FROM --platform=$TARGETPLATFORM node:24-bookworm-slim@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e AS browserskill-source
 WORKDIR /build
 ARG BUILD_PARALLELISM=4
 ARG RUSTUP_DIST_SERVER=https://static.rust-lang.org
@@ -32,8 +36,13 @@ ARG TARGETOS
 ARG TARGETARCH
 RUN bash scripts/build_browserskill.sh /opt/weknora/browserskill "${TARGETOS}/${TARGETARCH}"
 
-# Build stage
-FROM golang:1.26-bookworm AS builder
+# Only runtime artifacts are retained in the reusable image, not Rust/Node tools.
+FROM scratch AS browserskill-artifacts
+COPY --from=browserskill-source /opt/weknora/browserskill /browserskill
+FROM ${BROWSERSKILL_IMAGE} AS browserskill
+
+# Shared Go toolchain, independent of application go.mod and source changes.
+FROM golang:1.26-bookworm AS builder-base
 
 WORKDIR /app
 ARG BUILD_PARALLELISM=4
@@ -65,13 +74,8 @@ RUN if [ -n "$APK_MIRROR_ARG" ]; then \
 # Install migrate tool
 RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
-# Copy go mod files. go.mod replace-points anydoc at ./third_party/anydoc-go,
-# so that module's go.mod must exist before `go mod download`.
-COPY go.mod go.sum ./
-COPY third_party/anydoc-go/go.mod third_party/anydoc-go/go.mod
-RUN --mount=type=cache,target=/go/pkg/mod go mod download
-COPY cmd/download cmd/download
-RUN go run cmd/download/duckdb/duckdb.go
+# anydoc is an independent target: application dependencies cannot invalidate it.
+FROM builder-base AS anydoc-source
 COPY third_party/anydoc-go/ third_party/anydoc-go/
 COPY scripts/build-anydoc-lib.sh scripts/build-anydoc-lib.sh
 # Link the anydoc parser engine (office docs converted in-process, no
@@ -90,7 +94,22 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
         ./scripts/build-anydoc-lib.sh; \
     fi
 
+RUN mkdir -p /app/third_party/anydoc-go/lib
+FROM scratch AS anydoc-artifacts
+COPY --from=anydoc-source /app/third_party/anydoc-go/lib /anydoc/lib
+FROM ${ANYDOC_IMAGE} AS anydoc
+
+FROM builder-base AS builder
+ARG WITH_ANYDOC=1
+# Copy go mod files. go.mod replace-points anydoc at ./third_party/anydoc-go,
+# so that module's go.mod must exist before `go mod download`.
+COPY go.mod go.sum ./
+COPY third_party/anydoc-go/go.mod third_party/anydoc-go/go.mod
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
+COPY cmd/download cmd/download
+RUN go run cmd/download/duckdb/duckdb.go
 COPY . .
+COPY --from=anydoc /anydoc/lib /app/third_party/anydoc-go/lib
 RUN --mount=type=cache,target=/go/pkg/mod bash ./scripts/copy-licenses.sh /license-bundle
 
 # Get version and commit info for build injection
@@ -130,7 +149,7 @@ ARG APK_MIRROR_ARG
 # Pairing derives the gateway URL from the user's page origin by default.
 ENV BROWSERSKILL_BINARY=/opt/weknora/browserskill/bsk \
     BROWSERSKILL_EXTENSION_PATH=/opt/weknora/browserskill/browser-skill-weknora-0.3.1.zip
-COPY --from=browserskill /opt/weknora/browserskill /opt/weknora/browserskill
+COPY --from=browserskill /browserskill /opt/weknora/browserskill
 
 # Create a non-root user first
 RUN useradd -m -s /bin/bash appuser
