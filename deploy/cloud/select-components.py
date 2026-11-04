@@ -15,7 +15,7 @@ else:
     selected = set()
     for f in files:
         if f.startswith('frontend/'): selected.add('ui')
-        if f.startswith(('docreader/','docker/Dockerfile.docreader')): selected.add('docreader')
+        if f.startswith(('docreader/','packages/','docker/Dockerfile.docreader')): selected.add('docreader')
         if f.startswith(('internal/','cmd/','config/','third_party/','patches/','scripts/','docker/Dockerfile.app')) or f in ('go.mod','go.sum','Makefile','VERSION','LICENSE','THIRD_PARTY_NOTICES.md') or f.startswith('licenses/'):
             selected.add('app')
         if f in ('.dockerignore','.gitattributes'): selected.update(all_components)
