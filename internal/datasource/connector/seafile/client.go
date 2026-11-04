@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	userAgent       = "WeKnora-Seafile-Connector/1.0"
+	userAgent       = "Mint Knowledge-Seafile-Connector/1.0"
 	apiTimeout      = 30 * time.Second
 	downloadTimeout = 120 * time.Second
 

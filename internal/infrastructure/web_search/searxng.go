@@ -117,7 +117,7 @@ func (p *SearxngProvider) Search(
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "WeKnora/1.0")
+	req.Header.Set("User-Agent", "Mint Knowledge/1.0")
 
 	resp, err := p.client.Do(req)
 	if err != nil {

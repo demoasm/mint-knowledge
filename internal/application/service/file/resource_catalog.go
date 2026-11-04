@@ -256,3 +256,15 @@ func (s *resourceCatalogFileService) CopyFile(
 }
 
 var _ interfaces.FileService = (*resourceCatalogFileService)(nil)
+
+func (s *resourceCatalogFileService) GetPreviewURL(ctx context.Context, filePath, filename string, original bool) (string, bool, error) {
+	p, _, err := s.resolve(ctx, filePath)
+	if err != nil {
+		return "", false, err
+	}
+	provider, ok := s.inner.(interfaces.FilePreviewService)
+	if !ok {
+		return "", false, nil
+	}
+	return provider.GetPreviewURL(ctx, p, filename, original)
+}

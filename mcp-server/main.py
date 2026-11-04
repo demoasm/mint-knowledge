@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-WeKnora MCP Server 主入口点
+Mint Knowledge MCP Server 主入口点
 
-这个文件提供了一个统一的入口点来启动 WeKnora MCP 服务器。
+这个文件提供了一个统一的入口点来启动 Mint Knowledge MCP 服务器。
 可以通过多种方式运行：
 1. python main.py
 2. python -m weknora_mcp_server
@@ -46,7 +46,7 @@ def check_environment_variables():
     base_url = os.getenv("WEKNORA_BASE_URL")
     api_key = os.getenv("WEKNORA_API_KEY")
 
-    print("=== WeKnora MCP Server 环境检查 ===", file=sys.stderr)
+    print("=== Mint Knowledge MCP Server 环境检查 ===", file=sys.stderr)
     print(f"Base URL: {base_url or 'http://localhost:8080/api/v1 (默认)'}", file=sys.stderr)
     print(f"API Key: {'已设置' if api_key else '未设置 (警告)'}", file=sys.stderr)
 
@@ -63,7 +63,7 @@ def check_environment_variables():
 def parse_arguments():
     """解析命令行参数"""
     parser = argparse.ArgumentParser(
-        description="WeKnora MCP Server - Model Context Protocol server for WeKnora API",
+        description="Mint Knowledge MCP Server - Model Context Protocol server for Mint Knowledge API",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
@@ -72,8 +72,8 @@ def parse_arguments():
   python main.py --verbose          # 启用详细日志
   
 环境变量:
-  WEKNORA_BASE_URL       WeKnora API 基础 URL (默认: http://localhost:8080/api/v1)
-  WEKNORA_API_KEY        WeKnora API 密钥
+  WEKNORA_BASE_URL       Mint Knowledge API 基础 URL (默认: http://localhost:8080/api/v1)
+  WEKNORA_API_KEY        Mint Knowledge API 密钥
   MCP_SERVER_AUTH_TOKEN  SSE/HTTP 传输必填，客户端通过 Authorization: Bearer 传递
         """,
     )
@@ -85,7 +85,7 @@ def parse_arguments():
     parser.add_argument("--verbose", "-v", action="store_true", help="启用详细日志输出")
 
     parser.add_argument(
-        "--version", action="version", version="WeKnora MCP Server 1.1.1"
+        "--version", action="version", version="Mint Knowledge MCP Server 1.1.1"
     )
 
     parser.add_argument(

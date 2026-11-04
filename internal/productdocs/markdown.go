@@ -10,7 +10,7 @@ import (
 )
 
 // PublicBaseURL is where the documentation site serves these pages.
-const PublicBaseURL = "https://weknora.weixin.qq.com/docs/"
+const PublicBaseURL = "https://github.com/demoasm/mint-knowledge/blob/main/website-docs/"
 
 // maxSectionLevel is the deepest heading that starts its own section; deeper
 // headings stay in their section's text. The site anchors every level, and
@@ -43,7 +43,7 @@ type Doc struct {
 }
 
 // URL is the page's public address.
-func (d *Doc) URL() string { return PublicBaseURL + d.Path }
+func (d *Doc) URL() string { return publicDocURL(d.Path) }
 
 // Span returns the section at anchor followed by its subsections; "" is the
 // whole page.
@@ -284,13 +284,15 @@ func rewriteLinks(docPath, line string) string {
 
 func resolveLink(docPath, target string) string {
 	switch {
+	case strings.HasPrefix(target, PublicBaseURL):
+		return publicDocURL(strings.TrimPrefix(target, PublicBaseURL))
 	case strings.HasPrefix(target, "http://"), strings.HasPrefix(target, "https://"),
 		strings.HasPrefix(target, "mailto:"):
 		return target
 	case strings.HasPrefix(target, "#"):
-		return PublicBaseURL + docPath + target
+		return publicDocURL(docPath + target)
 	case strings.HasPrefix(target, "/"):
-		return PublicBaseURL + strings.TrimPrefix(target, "/")
+		return publicDocURL(strings.TrimPrefix(target, "/"))
 	}
 	file, anchor, _ := strings.Cut(target, "#")
 	resolved := path.Clean(path.Join(path.Dir(docPath), strings.TrimSuffix(file, ".md")))
@@ -300,5 +302,20 @@ func resolveLink(docPath, target string) string {
 	if anchor != "" {
 		resolved += "#" + anchor
 	}
-	return PublicBaseURL + resolved
+	return publicDocURL(resolved)
+}
+
+func publicDocURL(ref string) string {
+	file, anchor, hasAnchor := strings.Cut(ref, "#")
+	if file == "" {
+		file = "index.md"
+	}
+	if path.Ext(file) == "" {
+		file += ".md"
+	}
+	result := PublicBaseURL + file
+	if hasAnchor {
+		result += "#" + anchor
+	}
+	return result
 }

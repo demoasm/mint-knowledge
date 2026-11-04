@@ -26,9 +26,9 @@ export function mcpServerKey(name: string, id = ''): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
-  if (slug) return `weknora-${slug}`
+  if (slug) return `mint-${slug}`
   const idSlug = (id || '').replace(/[^a-z0-9]/gi, '').slice(0, 8).toLowerCase()
-  return idSlug ? `weknora-${idSlug}` : 'weknora'
+  return idSlug ? `mint-${idSlug}` : 'mint'
 }
 
 /** Cursor-compatible JSON for a native Streamable HTTP connection. Other clients use their own setup format. */
@@ -77,8 +77,8 @@ export function buildStdioBridgeSnippet(name: string, url: string, token: string
       mcpServers: {
         [mcpServerKey(name, id)]: {
           command: 'npx',
-          args: ['-y', 'mcp-remote@0.15.1', url, '--header', 'Authorization:${WEKNORA_MCP_AUTH}'],
-          env: { WEKNORA_MCP_AUTH: `Bearer ${token || MCP_TOKEN_PLACEHOLDER}` },
+          args: ['-y', 'mcp-remote@0.15.1', url, '--header', 'Authorization:${MINT_MCP_AUTH}'],
+          env: { MINT_MCP_AUTH: `Bearer ${token || MCP_TOKEN_PLACEHOLDER}` },
         },
       },
     },

@@ -431,7 +431,7 @@ func (r *repository) ensureCollection(ctx context.Context, dimension int) error 
 		collectionName,
 		uint32(r.shardsNum),
 		uint32(r.replicasNum),
-		fmt.Sprintf("WeKnora embeddings collection with dimension %d", dimension),
+		fmt.Sprintf("Mint Knowledge embeddings collection with dimension %d", dimension),
 		indexes,
 	)
 	if err != nil {

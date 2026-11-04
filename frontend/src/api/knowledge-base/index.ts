@@ -663,8 +663,12 @@ export function batchDownloadKnowledge(kbId: string, ids: string[], signal?: Abo
   });
 }
 
+export async function getKnowledgePreviewURL(id: string): Promise<{ url: string; html: boolean }> {
+  return await get(`/api/v1/knowledge/${id}/preview?format=json`) as unknown as { url: string; html: boolean };
+}
+
 export function previewKnowledgeFile(id: string) {
-  return getDown(`/api/v1/knowledge/${id}/preview`);
+  return getDown(`/api/v1/knowledge/${id}/preview?original=1`);
 }
 
 /** @param idsQueryString - query string with ids (e.g. ids=xxx&ids=yyy) */

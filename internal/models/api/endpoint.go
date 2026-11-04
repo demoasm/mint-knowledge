@@ -132,7 +132,7 @@ func (e Endpoint) newPost(ctx context.Context, url string, data []byte, contentT
 	secutils.ApplyCustomHeaders(req, e.Headers)
 	// Identity belongs to this call, not the shared model configuration or
 	// a per-request UUID. Derived contexts retain it across turns and retries.
-	req.Header.Set("User-Agent", "WeKnora")
+	req.Header.Set("User-Agent", "Mint Knowledge")
 	req.Header.Del("X-Conversation-ID")
 	if sessionID, ok := types.SessionIDFromContext(ctx); ok {
 		req.Header.Set("X-Conversation-ID", sessionID)

@@ -11,7 +11,7 @@ test('CLI hosts preserve proxy prefixes and omit the SDK API suffix', () => {
     ['http://127.0.0.1:19321/api/v1', 'null', 'http://127.0.0.1:19321'],
   ]) {
     const command = buildCLIConnectCommand(base!, origin!)
-    assert.ok(command.includes(`--host '${host}' --use &&\nweknora auth login`))
+    assert.ok(command.includes(`--host '${host}' --use &&\nmint-cli auth login`))
   }
 })
 

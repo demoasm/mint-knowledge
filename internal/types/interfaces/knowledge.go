@@ -111,6 +111,8 @@ type KnowledgeService interface {
 	DeleteKnowledgeList(ctx context.Context, ids []string) error
 	// GetKnowledgeFile retrieves the file associated with the knowledge.
 	GetKnowledgeFile(ctx context.Context, id string) (io.ReadCloser, string, error)
+	// GetKnowledgePreviewURL signs an off-server preview; empty URL means local storage.
+	GetKnowledgePreviewURL(ctx context.Context, id string, original bool) (string, bool, error)
 	// UpdateKnowledge updates knowledge information.
 	UpdateKnowledge(ctx context.Context, knowledge *types.Knowledge) error
 	// RegenerateKnowledgeSummary refreshes the document description and summary retrieval chunk.

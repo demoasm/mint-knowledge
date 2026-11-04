@@ -80,7 +80,7 @@ func (p *SerplyProvider) Search(
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "WeKnora/1.0")
+	req.Header.Set("User-Agent", "Mint Knowledge/1.0")
 	req.Header.Set("X-Api-Key", p.apiKey)
 	resp, err := p.client.Do(req)
 	if err != nil {

@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { indexEmbeddedSourceImages } from '@/utils/sourceImage';
 import { ref, shallowRef, watch, onMounted, onUnmounted, onErrorCaptured, nextTick, defineAsyncComponent } from 'vue';
-import { getKnowledgeDetails, listKnowledgeFiles, previewKnowledgeFile } from '@/api/knowledge-base/index';
+import { getKnowledgeDetails, listKnowledgeFiles, previewKnowledgeFile, getKnowledgePreviewURL } from '@/api/knowledge-base/index';
 import { previewTemporaryAttachment } from '@/api/chat/temporary-attachments';
 import { downloadArtifact } from '@/api/chat';
 import hljs from 'highlight.js';
@@ -94,6 +94,7 @@ onErrorCaptured((err) => {
 });
 const previewType = ref<FilePreviewKind>('unsupported');
 const blobUrl = ref('');
+const cloudPreviewUrl = ref('');
 const textContent = ref('');
 const highlightedCode = ref('');
 const markdownHtml = ref('');
@@ -492,6 +493,15 @@ async function loadPreview() {
   previewType.value = resolvePreviewKind(ft);
 
   try {
+    if (props.knowledgeId && !props.sourceBlob && !props.sourceMode) {
+      const preview = await getKnowledgePreviewURL(props.knowledgeId);
+      if (sourceKey !== getPreviewSourceKey()) return;
+      if (preview.url && preview.html) {
+        cloudPreviewUrl.value = preview.url;
+        loadedForId = sourceKey;
+        return;
+      }
+    }
     const rawBlob = await fetchPreviewBlob();
     let kind = resolvePreviewKind(ft);
     if (kind === 'unsupported') {
@@ -586,6 +596,7 @@ async function loadPreview() {
 }
 
 function cleanup() {
+  cloudPreviewUrl.value = '';
   markdownImageGeneration += 1;
   revokeMarkdownImageUrls();
   if (blobUrl.value) {
@@ -973,6 +984,12 @@ onUnmounted(() => {
       <t-button theme="primary" size="small" @click="loadedForId = ''; loadPreview()">
         {{ $t('preview.retry') }}
       </t-button>
+    </div>
+
+    <!-- Cloud document bytes load directly from Tencent CI, never through the app. -->
+    <div v-else-if="cloudPreviewUrl" class="preview-pdf">
+      <iframe ref="previewContent" tabindex="0" :title="fileName" :src="cloudPreviewUrl"
+        class="pdf-iframe" referrerpolicy="no-referrer" @load="onPreviewFrameLoad" />
     </div>
 
     <!-- Unsupported -->

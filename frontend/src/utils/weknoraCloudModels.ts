@@ -1,6 +1,6 @@
 import type { ModelConfig } from '@/api/model'
 
-export const WEKNORA_CLOUD_BASE_URL = 'https://weknora.weixin.qq.com'
+export const WEKNORA_CLOUD_BASE_URL = 'https://github.com/demoasm/mint-knowledge'
 export const WEKNORA_CLOUD_PROVIDER = 'weknoracloud'
 
 export type WkcModelKind = 'chat' | 'embedding' | 'rerank' | 'vllm'

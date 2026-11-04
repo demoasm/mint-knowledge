@@ -296,3 +296,51 @@ func (s *cosFileService) GetFileURL(ctx context.Context, filePath string) (strin
 
 	return presignedURL.String(), nil
 }
+
+// GetPreviewURL signs a browser-to-COS request. It never fetches the object.
+func (s *cosFileService) GetPreviewURL(ctx context.Context, filePath, filename string, original bool) (string, bool, error) {
+	client := s.client
+	var key string
+	var err error
+	if s.tempClient != nil && strings.HasPrefix(filePath, s.tempBucketURL) {
+		client = s.tempClient
+		key = strings.TrimPrefix(filePath, s.tempBucketURL)
+	} else {
+		key, err = s.parseCosObjectName(filePath)
+		if err != nil {
+			return "", false, err
+		}
+	}
+	if err := utils.SafeObjectKey(key); err != nil {
+		return "", false, err
+	}
+	credential := client.GetCredential()
+	signed, err := client.Object.GetPresignedURL(ctx, http.MethodGet, key, credential.SecretID, credential.SecretKey, 30*time.Minute, nil)
+	if err != nil {
+		return "", false, fmt.Errorf("sign COS preview: %w", err)
+	}
+	html := !original && cosHTMLPreviewSupported(filename)
+	if html {
+		// CI HTML preview expects the object authorization in the sign parameter.
+		query := url.Values{}
+		query.Set("ci-process", "doc-preview")
+		query.Set("dstType", "html")
+		authorization, err := url.QueryUnescape(signed.RawQuery)
+		if err != nil {
+			return "", false, fmt.Errorf("decode COS authorization: %w", err)
+		}
+		query.Set("sign", authorization)
+		signed.RawQuery = query.Encode()
+	}
+	return signed.String(), html, nil
+}
+
+func cosHTMLPreviewSupported(filename string) bool {
+	switch strings.ToLower(filepath.Ext(filename)) {
+	case ".pptx", ".ppt", ".pot", ".potx", ".pps", ".ppsx", ".dps", ".dpt", ".pptm", ".potm", ".ppsm",
+		".doc", ".dot", ".wps", ".wpt", ".docx", ".dotx", ".docm", ".dotm",
+		".xls", ".xlt", ".et", ".ett", ".xlsx", ".xltx", ".xlsb", ".xlsm", ".xltm", ".ets", ".pdf", ".rtf", ".txt":
+		return true
+	}
+	return false
+}

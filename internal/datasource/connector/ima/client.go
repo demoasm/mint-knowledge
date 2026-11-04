@@ -23,7 +23,7 @@ import (
 const (
 	defaultTimeout  = 60 * time.Second
 	defaultPageSize = 50
-	userAgent       = "WeKnora-IMA-Connector/1.0"
+	userAgent       = "Mint Knowledge-IMA-Connector/1.0"
 
 	// IMA hard limit: get_knowledge_list max limit=50; search_knowledge_base max=20.
 	searchPageSize = 20

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-WeKnora MCP Server 启动脚本
+Mint Knowledge MCP Server 启动脚本
 
 注意：在 stdio 传输下，stdout 是 JSON-RPC 通道，所有诊断/提示信息必须写入
 stderr，否则会破坏 MCP 协议流导致客户端判定"启动失败"。本脚本所有 print
@@ -32,7 +32,7 @@ def check_environment():
 
 def main():
     """主函数"""
-    print("启动 WeKnora MCP Server...", file=sys.stderr)
+    print("启动 Mint Knowledge MCP Server...", file=sys.stderr)
     check_environment()
 
     try:

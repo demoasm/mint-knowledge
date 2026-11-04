@@ -81,7 +81,7 @@ func TestParseDocSplitsSectionsWithSiteAnchors(t *testing.T) {
 	assert.Equal(t, []string{"开启并浏览 Wiki", "4.2 队列（Asynq）：Worker 池"}, deep.Parents)
 	assert.Equal(t, "Wiki 能力（Wiki） › 开启并浏览 Wiki › 4.2 队列（Asynq）：Worker 池 › 抽取粒度", deep.Trail())
 	assert.Contains(t, deep.Content, "##### 更深的标题", "headings below level 4 stay in their section")
-	assert.Equal(t, PublicBaseURL+"03-features/14-wiki#抽取粒度", deep.URL())
+	assert.Equal(t, PublicBaseURL+"03-features/14-wiki.md#抽取粒度", deep.URL())
 }
 
 func TestParseDocCleansSiteMarkup(t *testing.T) {
@@ -89,11 +89,11 @@ func TestParseDocCleansSiteMarkup(t *testing.T) {
 	lead := doc.Sections[0].Content
 	assert.Contains(t, lead, "（截图：Wiki 浏览器）")
 	assert.NotContains(t, lead, "不应出现")
-	assert.Contains(t, lead, "[观测]("+PublicBaseURL+"03-features/16-observability)")
-	assert.Contains(t, lead, "[本节]("+PublicBaseURL+"03-features/14-wiki#抽取粒度)")
+	assert.Contains(t, lead, "[观测]("+PublicBaseURL+"03-features/16-observability.md)")
+	assert.Contains(t, lead, "[本节]("+PublicBaseURL+"03-features/14-wiki.md#抽取粒度)")
 
 	enable := doc.Sections[1].Content
-	assert.Contains(t, enable, "[配置]("+PublicBaseURL+"01-getting-started/04-configuration#模型与推理)")
+	assert.Contains(t, enable, "[配置]("+PublicBaseURL+"01-getting-started/04-configuration.md#模型与推理)")
 	assert.NotContains(t, enable, "graph TD", "Mermaid diagrams are dropped")
 	assert.Contains(t, enable, "（此处为流程图，略）")
 	assert.Contains(t, enable, "# 不是标题", "a # line inside a code fence is not a heading")

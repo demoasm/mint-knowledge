@@ -2787,7 +2787,7 @@ g -c uploadpack.allowAnySHA1InWant=true --git-dir="$tmp/repo.git" fetch -q --no-
 g --git-dir="$tmp/repo.git" symbolic-ref HEAD refs/heads/main
 g --git-dir="$tmp/repo.git" config core.bare false
 g --git-dir="$tmp/repo.git" config user.email agent@weknora.local
-g --git-dir="$tmp/repo.git" config user.name 'WeKnora Agent'
+g --git-dir="$tmp/repo.git" config user.name 'Mint Knowledge Agent'
 mkdir -p "$tmp/tree"
 g --git-dir="$tmp/repo.git" --work-tree="$tmp/tree" checkout -q -f main
 mkdir -p "$tmp/tree/input" "$tmp/tree/output"
