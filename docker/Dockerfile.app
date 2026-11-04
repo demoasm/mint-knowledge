@@ -1,6 +1,14 @@
 # Build extension and daemon from the same pinned source on the runtime architecture.
 FROM --platform=$TARGETPLATFORM node:24-bookworm-slim@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e AS browserskill
 WORKDIR /build
+ARG BUILD_PARALLELISM=4
+ARG RUSTUP_DIST_SERVER=https://static.rust-lang.org
+ARG RUSTUP_UPDATE_ROOT=https://static.rust-lang.org/rustup
+ARG CARGO_MIRROR=
+ENV CARGO_BUILD_JOBS=${BUILD_PARALLELISM} CMAKE_BUILD_PARALLEL_LEVEL=${BUILD_PARALLELISM}
+ENV RUSTUP_DIST_SERVER=${RUSTUP_DIST_SERVER} RUSTUP_UPDATE_ROOT=${RUSTUP_UPDATE_ROOT}
+ARG NPM_REGISTRY=https://registry.npmjs.org
+ENV NPM_CONFIG_REGISTRY=${NPM_REGISTRY}
 # Use the same optional Debian mirror as the Go builder and runtime stages.
 ARG APK_MIRROR_ARG
 # This base image has no CA certificates. Install them from the original HTTP
@@ -17,6 +25,7 @@ RUN if [ -n "$APK_MIRROR_ARG" ]; then \
     rm -rf /var/lib/apt/lists/*
 ENV RUSTUP_HOME=/usr/local/rustup CARGO_HOME=/usr/local/cargo
 ENV PATH=/usr/local/cargo/bin:$PATH
+RUN if [ -n "$CARGO_MIRROR" ]; then mkdir -p "$CARGO_HOME" && printf '[source.crates-io]\nreplace-with="server-mirror"\n[source.server-mirror]\nregistry="%s"\n' "$CARGO_MIRROR" > "$CARGO_HOME/config.toml"; fi
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
 COPY scripts/build_browserskill.sh scripts/browserskill-release.json ./scripts/
 ARG TARGETOS
@@ -27,6 +36,13 @@ RUN bash scripts/build_browserskill.sh /opt/weknora/browserskill "${TARGETOS}/${
 FROM golang:1.26-bookworm AS builder
 
 WORKDIR /app
+ARG BUILD_PARALLELISM=4
+ARG RUSTUP_DIST_SERVER=https://static.rust-lang.org
+ARG RUSTUP_UPDATE_ROOT=https://static.rust-lang.org/rustup
+ARG CARGO_MIRROR=
+ENV CARGO_BUILD_JOBS=${BUILD_PARALLELISM} CMAKE_BUILD_PARALLEL_LEVEL=${BUILD_PARALLELISM}
+ENV RUSTUP_DIST_SERVER=${RUSTUP_DIST_SERVER} RUSTUP_UPDATE_ROOT=${RUSTUP_UPDATE_ROOT}
+ENV GOMAXPROCS=${BUILD_PARALLELISM} GOFLAGS=-p=${BUILD_PARALLELISM}
 
 # 通过构建参数接收敏感信息
 ARG GOPRIVATE_ARG
@@ -65,6 +81,7 @@ COPY scripts/build-anydoc-lib.sh scripts/build-anydoc-lib.sh
 ARG WITH_ANYDOC=1
 ENV RUSTUP_HOME=/usr/local/rustup CARGO_HOME=/usr/local/cargo
 ENV PATH=/usr/local/cargo/bin:$PATH
+RUN if [ -n "$CARGO_MIRROR" ]; then mkdir -p "$CARGO_HOME" && printf '[source.crates-io]\nreplace-with="server-mirror"\n[source.server-mirror]\nregistry="%s"\n' "$CARGO_MIRROR" > "$CARGO_HOME/config.toml"; fi
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     if [ "$WITH_ANYDOC" = "1" ]; then \

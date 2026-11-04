@@ -1,0 +1,7 @@
+[worker.oci]
+  max-parallelism = 1
+  gc = true
+  gckeepstorage = 6000
+
+[registry."docker.io"]
+  mirrors = ["mirror.ccs.tencentyun.com"]
