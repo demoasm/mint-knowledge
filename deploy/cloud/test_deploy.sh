@@ -150,14 +150,16 @@ cat > /tmp/mock-bin/git <<'MOCK'
 #!/bin/bash
 printf '%s\n' "$*" >> /tmp/git-calls
 case "$*" in
- *fetch*) [[ "${MOCK_FAIL_FETCH:-0}" != 1 ]] ;;
+ *fetch*)
+  if [[ "${MOCK_TRANSIENT_FETCH:-0}" == 1 && ! -e /tmp/fetch-retried ]]; then touch /tmp/fetch-retried; exit 1; fi
+  [[ "${MOCK_FAIL_FETCH:-0}" != 1 ]] ;;
  *rev-parse*) printf '%s\n' aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ;;
  *status*) [[ "${MOCK_DIRTY:-0}" != 1 ]] || echo dirty ;;
  'init --bare '*) mkdir -p "${@: -1}" ;;
  *'worktree add --detach '*) mkdir -p "${@: -2:1}"; touch "${@: -2:1}/.git" ;;
 esac
 MOCK
-for tool in fallocate mkswap swapon; do
+for tool in fallocate mkswap swapon sleep; do
  printf '#!/bin/bash\nexit 0\n' > "/tmp/mock-bin/$tool"
 done
 chmod +x /tmp/mock-bin/*
@@ -190,3 +192,11 @@ assert Path('/opt/mint-knowledge-build/built/'+'a'*40+'/app.ready').exists()
 assert Path('/opt/mint-knowledge-build/built/'+'a'*40+'/frontend.ready').exists()
 print('PASS: source builds back up separate images but NEVER deploy or alter release/current-source')
 PYTEST
+
+reset_release
+printf '%s\n' test-password | MOCK_TRANSIENT_FETCH=1 SSH_ORIGINAL_COMMAND="build $version frontend" bash "$source_dir/deploy.sh"
+[[ "$(sha256sum release.yaml)" == "$before" && $(cat current-source) == old ]]
+[[ -e /tmp/fetch-retried ]]
+! grep -q ' up ' /tmp/docker-calls
+grep -q 'http.version=HTTP/1.1' /tmp/git-calls
+echo 'PASS: transient Git fetch failure retries successfully without deploying'
