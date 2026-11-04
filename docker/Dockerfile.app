@@ -56,6 +56,23 @@ COPY third_party/anydoc-go/go.mod third_party/anydoc-go/go.mod
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY cmd/download cmd/download
 RUN go run cmd/download/duckdb/duckdb.go
+COPY third_party/anydoc-go/ third_party/anydoc-go/
+COPY scripts/build-anydoc-lib.sh scripts/build-anydoc-lib.sh
+# Link the anydoc parser engine (office docs converted in-process, no
+# Python docreader). Default on so Hub / compose images ship a working
+# engine; pass WITH_ANYDOC=0 to skip the Rust toolchain (~few minutes and
+# ~1 GB of build-stage layers).
+ARG WITH_ANYDOC=1
+ENV RUSTUP_HOME=/usr/local/rustup CARGO_HOME=/usr/local/cargo
+ENV PATH=/usr/local/cargo/bin:$PATH
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    if [ "$WITH_ANYDOC" = "1" ]; then \
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+            | sh -s -- -y --profile minimal --default-toolchain stable && \
+        ./scripts/build-anydoc-lib.sh; \
+    fi
+
 COPY . .
 RUN --mount=type=cache,target=/go/pkg/mod bash ./scripts/copy-licenses.sh /license-bundle
 
