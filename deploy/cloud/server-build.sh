@@ -55,6 +55,11 @@ build_release_from_source() {
   args=(--build-arg APK_MIRROR_ARG=mirrors.tencent.com)
   case "$service" in
    app)
+    if [[ -f "$source/deploy/cloud/native-artifacts.sh" ]]; then
+     source "$source/deploy/cloud/native-artifacts.sh"
+     ensure_native_artifacts "$source"
+     args+=(--build-arg BROWSERSKILL_IMAGE="$BROWSERSKILL_ARTIFACT_IMAGE" --build-arg ANYDOC_IMAGE="$ANYDOC_ARTIFACT_IMAGE")
+    fi
     args+=(--build-arg BUILD_PARALLELISM=1 --build-arg GOPROXY_ARG=https://goproxy.cn,direct
      --build-arg RUSTUP_DIST_SERVER=https://rsproxy.cn --build-arg RUSTUP_UPDATE_ROOT=https://rsproxy.cn/rustup
      --build-arg CARGO_MIRROR=sparse+https://rsproxy.cn/index/
