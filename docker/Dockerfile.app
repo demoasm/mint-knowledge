@@ -56,19 +56,8 @@ COPY third_party/anydoc-go/go.mod third_party/anydoc-go/go.mod
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY cmd/download cmd/download
 RUN go run cmd/download/duckdb/duckdb.go
-COPY . .
-RUN --mount=type=cache,target=/go/pkg/mod bash ./scripts/copy-licenses.sh /license-bundle
-
-# Get version and commit info for build injection
-ARG VERSION_ARG
-ARG COMMIT_ID_ARG
-ARG BUILD_TIME_ARG
-
-# Set build-time variables
-ENV VERSION=${VERSION_ARG}
-ENV COMMIT_ID=${COMMIT_ID_ARG}
-ENV BUILD_TIME=${BUILD_TIME_ARG}
-
+COPY third_party/anydoc-go/ third_party/anydoc-go/
+COPY scripts/build-anydoc-lib.sh scripts/build-anydoc-lib.sh
 # Link the anydoc parser engine (office docs converted in-process, no
 # Python docreader). Default on so Hub / compose images ship a working
 # engine; pass WITH_ANYDOC=0 to skip the Rust toolchain (~few minutes and
@@ -83,6 +72,19 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
             | sh -s -- -y --profile minimal --default-toolchain stable && \
         ./scripts/build-anydoc-lib.sh; \
     fi
+
+COPY . .
+RUN --mount=type=cache,target=/go/pkg/mod bash ./scripts/copy-licenses.sh /license-bundle
+
+# Get version and commit info for build injection
+ARG VERSION_ARG
+ARG COMMIT_ID_ARG
+ARG BUILD_TIME_ARG
+
+# Set build-time variables
+ENV VERSION=${VERSION_ARG}
+ENV COMMIT_ID=${COMMIT_ID_ARG}
+ENV BUILD_TIME=${BUILD_TIME_ARG}
 
 # Build the application with version info. Mount the Go build cache as well as
 # the module cache: `COPY . .` invalidates this layer on every source change,

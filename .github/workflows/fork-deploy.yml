@@ -1,13 +1,13 @@
 name: Deploy lightweight server
 on:
-  workflow_run:
-    workflows: [Build Mint images]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
     inputs:
       version:
         description: Full 40-character commit SHA from a successful Build Mint images run
+        required: true
+      components:
+        description: Comma-separated services to update (app,frontend,docreader)
+        default: app,frontend,docreader
         required: true
 permissions:
   contents: read
@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    if: (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -28,6 +28,7 @@ jobs:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
           REGISTRY_TOKEN: ${{ github.token }}
+          COMPONENTS: ${{ inputs.components }}
           VERSION: ${{ inputs.version || github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
@@ -36,4 +37,4 @@ jobs:
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          printf '%s\n' "$REGISTRY_TOKEN" | ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "$VERSION"
+          printf '%s\n' "$REGISTRY_TOKEN" | ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "$VERSION $COMPONENTS"
