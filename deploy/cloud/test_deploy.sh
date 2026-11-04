@@ -130,3 +130,12 @@ printf '%s\n' test-password | SSH_ORIGINAL_COMMAND='tcb-probe probe-123-1' bash 
 ! grep -q ' up ' /tmp/docker-calls
 [[ -z $(find . -maxdepth 1 -type d -name '.tcb-auth.*' -print -quit) ]]
 echo 'PASS: TCB probe changes no services and leaves no registry credential config'
+
+reset_release
+printf '%s\n' test-password | SSH_ORIGINAL_COMMAND='tcb-bootstrap app,frontend' bash "$source_dir/deploy.sh"
+[[ "$(sha256sum release.yaml)" == "$before" && $(cat current-source) == old ]]
+grep -q 'push ccr.ccs.tencentyun.com/tcb-100006345097-fwhd/git:bootstrap-app-' /tmp/docker-calls
+grep -q 'push ccr.ccs.tencentyun.com/tcb-100006345097-fwhd/git:bootstrap-ui-' /tmp/docker-calls
+! grep -q ' up ' /tmp/docker-calls
+[[ -z $(find . -maxdepth 1 -type d -name '.tcb-auth.*' -print -quit) ]]
+echo 'PASS: TCB bootstrap seeds cached layers without changing release or services'
