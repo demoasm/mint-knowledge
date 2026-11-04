@@ -37,7 +37,16 @@ build_release_from_source() {
  local mirror="$root/repository.git" source="$root/sources/$version"
  if [[ ! -d "$mirror" ]]; then git init --bare "$mirror"; fi
  git --git-dir="$mirror" config remote.origin.url https://github.com/demoasm/mint-knowledge.git
- timeout 300 git --git-dir="$mirror" fetch --no-tags --depth=1 origin "$version"
+ local fetched=false attempt
+ for attempt in 1 2 3; do
+  echo "Fetch source $version (attempt $attempt/3)"
+  if timeout 180 git -c http.version=HTTP/1.1 --git-dir="$mirror" fetch --no-tags --depth=1 origin "$version"; then
+   fetched=true
+   break
+  fi
+  if (( attempt < 3 )); then sleep "$((attempt*5))"; fi
+ done
+ $fetched || { echo 'Source fetch failed after 3 attempts; no build or deployment performed' >&2; return 1; }
  [[ "$(git --git-dir="$mirror" rev-parse "$version^{commit}")" == "$version" ]] || return 1
  if [[ ! -e "$source/.git" ]]; then
   git --git-dir="$mirror" worktree add --detach "$source" "$version"
