@@ -803,6 +803,28 @@ func normalizeTargetFolderPath(ctx context.Context, folderPath string) (string, 
 	return types.NormalizeKnowledgeFolderPath(safe), nil
 }
 
+// GetKnowledgePreviewURL resolves the same tenant-scoped storage as downloads,
+// without opening the object or transferring any file bytes.
+func (s *knowledgeService) GetKnowledgePreviewURL(ctx context.Context, id string, original bool) (string, bool, error) {
+	tenantID := ctx.Value(types.TenantIDContextKey).(uint64)
+	knowledge, err := s.repo.GetKnowledgeByID(ctx, tenantID, id)
+	if err != nil {
+		return "", false, err
+	}
+	if knowledge.IsManual() {
+		return "", false, nil
+	}
+	kb, err := s.kbService.GetKnowledgeBaseByID(ctx, knowledge.KnowledgeBaseID)
+	if err != nil {
+		return "", false, err
+	}
+	provider, ok := s.resolveFileServiceForPath(ctx, kb, knowledge.FilePath).(interfaces.FilePreviewService)
+	if !ok {
+		return "", false, nil
+	}
+	return provider.GetPreviewURL(ctx, knowledge.FilePath, knowledge.FileName, original)
+}
+
 // GetKnowledgeFile retrieves the physical file associated with a knowledge entry
 func (s *knowledgeService) GetKnowledgeFile(ctx context.Context, id string) (io.ReadCloser, string, error) {
 	// Get knowledge record

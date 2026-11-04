@@ -2086,11 +2086,14 @@ func (h *KnowledgeHandler) DownloadKnowledgeFile(c *gin.Context) {
 
 // PreviewKnowledgeFile godoc
 // @Summary      预览知识文件
-// @Description  返回知识条目关联的原始文件，Content-Type 根据文件类型设置，用于浏览器内嵌预览
+// @Description  COS 文件经权限校验后 302 跳转至短期签名预览链接；本地存储继续返回文件。format=json 可查询预览地址，original=1 获取原文件。
 // @Tags         知识管理
 // @Accept       json
 // @Produce      application/pdf,image/jpeg,image/png,text/plain
 // @Param        id   path      string  true  "知识ID"
+// @Param        format query string false "json 返回预览地址元数据"
+// @Param        original query string false "1 跳转到原文件而非万象 HTML"
+// @Success      302 {string} string "Location: 短期签名的 COS/万象地址"
 // @Success      200  {file}    file    "文件内容"
 // @Failure      400  {object}  errors.AppError  "请求参数错误"
 // @Security     Bearer
@@ -2108,6 +2111,23 @@ func (h *KnowledgeHandler) PreviewKnowledgeFile(c *gin.Context) {
 	_, effCtx, err := h.resolveKnowledgeAndValidateKBAccess(c, id, types.OrgRoleViewer)
 	if err != nil {
 		c.Error(err)
+		return
+	}
+
+	previewURL, html, err := h.kgService.GetKnowledgePreviewURL(effCtx, id, c.Query("original") == "1")
+	if err != nil {
+		logger.ErrorWithFields(ctx, err, nil)
+		c.Error(errors.NewInternalServerError("Failed to generate preview URL"))
+		return
+	}
+	c.Header("Cache-Control", "private, no-store")
+	c.Header("Referrer-Policy", "no-referrer")
+	if c.Query("format") == "json" {
+		c.JSON(http.StatusOK, gin.H{"url": previewURL, "html": html})
+		return
+	}
+	if previewURL != "" {
+		c.Redirect(http.StatusFound, previewURL)
 		return
 	}
 

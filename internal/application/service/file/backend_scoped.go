@@ -123,3 +123,15 @@ func (s *backendScopedFileService) CopyFile(ctx context.Context, path string, te
 	}
 	return s.wrap(result), nil
 }
+
+func (s *backendScopedFileService) GetPreviewURL(ctx context.Context, filePath, filename string, original bool) (string, bool, error) {
+	p, err := s.unwrap(filePath)
+	if err != nil {
+		return "", false, err
+	}
+	provider, ok := s.inner.(interfaces.FilePreviewService)
+	if !ok {
+		return "", false, nil
+	}
+	return provider.GetPreviewURL(ctx, p, filename, original)
+}

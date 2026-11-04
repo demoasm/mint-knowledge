@@ -6,6 +6,12 @@ import (
 	"mime/multipart"
 )
 
+// FilePreviewService optionally provides direct, signed browser previews.
+// The boolean reports whether the URL renders a cloud HTML document viewer.
+type FilePreviewService interface {
+	GetPreviewURL(ctx context.Context, filePath, filename string, original bool) (string, bool, error)
+}
+
 // FileService is the interface for file services.
 // FileService provides methods to save, retrieve, and delete files.
 type FileService interface {
