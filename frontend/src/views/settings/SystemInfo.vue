@@ -270,7 +270,7 @@ const troubleshootingDocsURL = docsUrl('troubleshootingMigrations')
 // paste it manually. Body is intentionally minimal — the bug template will fill
 // in the rest. Encode aggressively to survive newlines / quotes.
 const reportIssueURL = computed(() => {
-  const base = 'https://github.com/Tencent/WeKnora/issues/new'
+  const base = 'https://github.com/demoasm/mint-knowledge/issues/new'
   const params = new URLSearchParams({
     template: 'bug_report.yml',
     title: '[Bug]: Database migration failed at startup',

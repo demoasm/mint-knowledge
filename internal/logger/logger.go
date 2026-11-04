@@ -383,7 +383,7 @@ func defaultMacAppLogPath() string {
 		return ""
 	}
 
-	appName := "WeKnora Lite"
+	appName := "Mint Knowledge Lite"
 	if idx := strings.Index(execPath, ".app/Contents/MacOS"); idx >= 0 {
 		bundleName := filepath.Base(execPath[:idx+4])
 		if trimmed := strings.TrimSuffix(bundleName, ".app"); trimmed != "" {

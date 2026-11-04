@@ -473,7 +473,7 @@ func (c *mcpGoClient) Initialize(ctx context.Context) (*InitializeResult, error)
 			ProtocolVersion: mcp.LATEST_PROTOCOL_VERSION,
 			Capabilities:    mcp.ClientCapabilities{},
 			ClientInfo: mcp.Implementation{
-				Name:    "WeKnora",
+				Name:    "Mint Knowledge",
 				Version: "1.0.0",
 			},
 		},
@@ -670,7 +670,7 @@ func (c *mcpGoClient) listRawTools(ctx context.Context) ([]*types.MCPTool, error
 			// metadata/header helpers without losing unknown JSON Schema fields.
 			params.Meta = &mcp.Meta{}
 			params.Meta.SetProtocolVersion(version)
-			params.Meta.SetClientInfo(mcp.Implementation{Name: "WeKnora", Version: "1.0.0"})
+			params.Meta.SetClientInfo(mcp.Implementation{Name: "Mint Knowledge", Version: "1.0.0"})
 			params.Meta.SetClientCapabilities(mcp.ClientCapabilities{})
 			headers = make(http.Header)
 			for name, value := range mcp.StandardHeaders(version, mcp.MethodToolsList, nil) {

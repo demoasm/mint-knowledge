@@ -41,6 +41,6 @@ test('every linked doc page and anchor exists in website-docs', () => {
 })
 
 test('docsUrl points at the public docs site', () => {
-  assert.equal(docsUrl('home'), 'https://weknora.weixin.qq.com/docs/')
-  assert.equal(docsUrl('models'), 'https://weknora.weixin.qq.com/docs/03-features/06-models')
+  assert.equal(docsUrl('home'), 'https://github.com/demoasm/mint-knowledge/blob/main/website-docs/index.md')
+  assert.equal(docsUrl('models'), 'https://github.com/demoasm/mint-knowledge/blob/main/website-docs/03-features/06-models.md')
 })

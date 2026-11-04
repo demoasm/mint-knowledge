@@ -91,7 +91,7 @@ func DispatchEmbedWebhook(ch *types.EmbedChannel, eventType, sessionID string, p
 			return
 		}
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("User-Agent", "WeKnora-Embed-Webhook/1.0")
+		req.Header.Set("User-Agent", "Mint Knowledge-Embed-Webhook/1.0")
 		if secret != "" {
 			mac := hmac.New(sha256.New, []byte(secret))
 			_, _ = mac.Write(raw)

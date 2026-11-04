@@ -101,7 +101,7 @@ func (c *client) request(ctx context.Context, method, p string, depth int, versi
 		return nil, invalidResponse()
 	}
 	req.SetBasicAuth(c.username, c.password)
-	req.Header.Set("User-Agent", "WeKnora-Nextcloud-Connector/1.0")
+	req.Header.Set("User-Agent", "Mint Knowledge-Nextcloud-Connector/1.0")
 	if method == "PROPFIND" {
 		req.Header.Set("Depth", strconv.Itoa(depth))
 		req.Header.Set("Content-Type", "application/xml; charset=utf-8")

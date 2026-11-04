@@ -1,5 +1,5 @@
 /** Public deployment of website-docs (VitePress, base `/docs/`). */
-export const DOCS_BASE_URL = 'https://weknora.weixin.qq.com/docs/'
+export const DOCS_BASE_URL = 'https://github.com/demoasm/mint-knowledge/blob/main/website-docs/'
 
 /**
  * Doc pages linked from the UI, as website-docs paths without the `.md`
@@ -20,5 +20,6 @@ export const DOC_PAGES = {
 export type DocPage = keyof typeof DOC_PAGES
 
 export function docsUrl(page: DocPage): string {
-  return DOCS_BASE_URL + DOC_PAGES[page]
+  const [path, anchor] = DOC_PAGES[page].split('#')
+  return DOCS_BASE_URL + (path ? path + '.md' : 'index.md') + (anchor ? '#' + anchor : '')
 }

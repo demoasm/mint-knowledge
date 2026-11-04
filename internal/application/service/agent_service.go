@@ -602,11 +602,11 @@ func registerProductDocTools(ctx context.Context, toolRegistry *tools.ToolRegist
 	}
 	lib, err := productdocs.Default()
 	if lib == nil {
-		logger.Warnf(ctx, "WeKnora documentation tools withheld: %v", err)
+		logger.Warnf(ctx, "Mint Knowledge documentation tools withheld: %v", err)
 		return
 	}
 	if err != nil {
-		logger.Warnf(ctx, "WeKnora documentation pages left out: %v", err)
+		logger.Warnf(ctx, "Mint Knowledge documentation pages left out: %v", err)
 	}
 	toolRegistry.RegisterTool(tools.NewSearchWeKnoraDocsTool(lib))
 	toolRegistry.RegisterTool(tools.NewReadWeKnoraDocTool(lib))

@@ -42,7 +42,7 @@ func newRuncrateProvider() *Definition {
 		Description: "deepseek-ai/DeepSeek-V4.1-Flash, zai-org/GLM-5.3, Qwen/Qwen3.8-Flash, " +
 			"Qwen/Qwen3-Embedding-8B, etc.",
 		Website: "https://www.runcrate.ai/inference/free" +
-			"?utm_source=WeKnora&utm_medium=directory&utm_campaign=gpu_pricing",
+			"?utm_source=Mint Knowledge&utm_medium=directory&utm_campaign=gpu_pricing",
 		Icon:         runcrateIcon,
 		API:          api.APIOpenAICompletions,
 		Order:        53,

@@ -82,21 +82,21 @@ const { apiBaseUrlDisplay } = useApiBaseUrlDisplay()
 const steps = computed(() => [
   {
     key: 'install',
-    command: 'git clone https://github.com/Tencent/WeKnora.git\ncd WeKnora/cli\ngo build -o weknora .\nexport PATH="$PWD:$PATH"',
+    command: 'git clone https://github.com/demoasm/mint-knowledge.git\ncd mint-knowledge/cli\ngo build -o mint-cli .\nexport PATH="$PWD:$PATH"',
   },
   { key: 'connect', command: buildCLIConnectCommand(apiBaseUrlDisplay.value, window.location.origin) },
-  { key: 'verify', command: 'weknora doctor\nweknora kb list' },
+  { key: 'verify', command: 'mint-cli doctor\nmint-cli kb list' },
 ])
 const examples = [
   {
     key: 'commands',
-    command: 'weknora doc upload ./document.pdf --kb "KB_ID"\nweknora search chunks "query" --kb "KB_ID"\nweknora chat "question" --kb "KB_ID" --format text\nweknora agent list',
+    command: 'mint-cli doc upload ./document.pdf --kb "KB_ID"\nmint-cli search chunks "query" --kb "KB_ID"\nmint-cli chat "question" --kb "KB_ID" --format text\nmint-cli agent list',
   },
   {
     key: 'mcp',
     command: JSON.stringify({
       mcpServers: {
-        weknora: { command: 'weknora', args: ['--profile', 'weknora', 'mcp', 'serve'] },
+        mint: { command: 'mint-cli', args: ['--profile', 'mint', 'mcp', 'serve'] },
       },
     }, null, 2),
   },
@@ -104,6 +104,6 @@ const examples = [
 
 const copy = (command: string) => copyWithToast(command, 'integrations.cli.copied')
 const openDocs = () => {
-  window.open('https://github.com/Tencent/WeKnora/blob/main/cli/README.md', '_blank', 'noopener,noreferrer')
+  window.open('https://github.com/demoasm/mint-knowledge/blob/main/cli/README.md', '_blank', 'noopener,noreferrer')
 }
 </script>

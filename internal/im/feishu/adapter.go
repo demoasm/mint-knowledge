@@ -945,7 +945,7 @@ func buildStreamingCardJSON(region Region) string {
 		},
 		"header": map[string]interface{}{
 			"template": "blue",
-			"title":    map[string]string{"tag": "plain_text", "content": "WeKnora"},
+			"title":    map[string]string{"tag": "plain_text", "content": "Mint Knowledge"},
 		},
 		"body": map[string]interface{}{
 			"elements": []map[string]interface{}{

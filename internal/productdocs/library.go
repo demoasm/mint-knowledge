@@ -100,7 +100,7 @@ func Load(fsys fs.FS) (*Library, error) {
 				pageErrs = append(pageErrs, err)
 				continue
 			}
-			doc, err := parseDoc(name, cat.Label, string(raw))
+			doc, err := parseDoc(name, cat.Label, brandDocumentation(string(raw)))
 			if err != nil {
 				pageErrs = append(pageErrs, err)
 				continue
@@ -207,6 +207,8 @@ func inCategory(d *Doc, category string) bool {
 // "#anchor" that may be percent-encoded as a browser copies it.
 func normalizeRef(ref string) (string, string) {
 	ref = strings.TrimSpace(ref)
+	ref = strings.TrimPrefix(ref, "https://weknora.weixin.qq.com/docs/")
+	ref = strings.TrimPrefix(ref, "http://weknora.weixin.qq.com/docs/")
 	ref, anchor, _ := strings.Cut(ref, "#")
 	ref = strings.TrimPrefix(ref, PublicBaseURL)
 	ref = strings.TrimPrefix(ref, "http://"+strings.TrimPrefix(PublicBaseURL, "https://"))
@@ -326,4 +328,15 @@ func snippet(text string, terms []string) string {
 		out += "…"
 	}
 	return out
+}
+
+// brandDocumentation adapts bundled help copy without changing protocol/tool IDs.
+func brandDocumentation(raw string) string {
+	return strings.NewReplacer(
+		"https://github.com/Tencent/WeKnora", "https://github.com/demoasm/mint-knowledge",
+		"https://weknora.weixin.qq.com/docs/", PublicBaseURL,
+		"WeKnora Cloud", "External Cloud",
+		"WeKnoraCloud", "External Cloud",
+		"WeKnora", "Mint Knowledge",
+	).Replace(raw)
 }

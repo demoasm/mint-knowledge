@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-WeKnora MCP Server 安装脚本
+Mint Knowledge MCP Server 安装脚本
 """
 
 from setuptools import setup
@@ -12,7 +12,7 @@ def read_readme():
         with open("README.md", "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
-        return "WeKnora MCP Server - Model Context Protocol server for WeKnora API"
+        return "Mint Knowledge MCP Server - Model Context Protocol server for Mint Knowledge API"
 
 
 # 读取依赖
@@ -34,12 +34,12 @@ def read_requirements():
 setup(
     name="tencent-weknora-mcp",
     version="1.1.1",
-    author="WeKnora Team",
+    author="Mint Knowledge Team",
     author_email="support@weknora.com",
-    description="WeKnora MCP Server - Model Context Protocol server for WeKnora API",
+    description="Mint Knowledge MCP Server - Model Context Protocol server for Mint Knowledge API",
     long_description=read_readme(),
     long_description_content_type="text/markdown",
-    url="https://github.com/Tencent/WeKnora/tree/main/mcp-server",
+    url="https://github.com/Tencent/Mint Knowledge/tree/main/mcp-server",
     py_modules=["weknora_mcp_server", "upload_paths", "main", "run_server", "run", "test_module"],
     classifiers=[
         "Development Status :: 4 - Beta",

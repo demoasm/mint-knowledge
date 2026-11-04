@@ -24,7 +24,7 @@ const (
 	maxArticleSize = 5 * 1024 * 1024 // 5 MB
 
 	// defaultUserAgent is sent on every request; some feeds reject empty UAs.
-	defaultUserAgent = "Mozilla/5.0 (compatible; WeKnora-RSS/1.0; +https://weknora.weixin.qq.com)"
+	defaultUserAgent = "Mozilla/5.0 (compatible; Mint Knowledge-RSS/1.0; +https://weknora.weixin.qq.com)"
 )
 
 // client performs SSRF-safe HTTP fetches with optional custom headers.

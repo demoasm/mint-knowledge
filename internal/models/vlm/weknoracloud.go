@@ -38,10 +38,10 @@ type WeKnoraCloudVLM struct {
 // NewWeKnoraCloudVLM creates a WeKnoraCloud-backed VLM instance.
 func NewWeKnoraCloudVLM(config *Config) (*WeKnoraCloudVLM, error) {
 	if config.AppID == "" {
-		return nil, fmt.Errorf("WeKnoraCloud VLM: AppID is required")
+		return nil, fmt.Errorf("Mint KnowledgeCloud VLM: AppID is required")
 	}
 	if config.AppSecret == "" {
-		return nil, fmt.Errorf("WeKnoraCloud VLM: AppSecret is required")
+		return nil, fmt.Errorf("Mint KnowledgeCloud VLM: AppSecret is required")
 	}
 	baseURL := strings.TrimRight(config.BaseURL, "/")
 	if err := validateVLMBaseURL(baseURL); err != nil {
@@ -163,7 +163,7 @@ func (v *WeKnoraCloudVLM) PredictWithOptions(
 	for _, img := range imgBytesList {
 		totalImageSize += len(img)
 	}
-	logger.Infof(ctx, "[VLM] Calling WeKnoraCloud API, model=%s, baseURL=%s, numImages=%d, totalImageSize=%d",
+	logger.Infof(ctx, "[VLM] Calling Mint KnowledgeCloud API, model=%s, baseURL=%s, numImages=%d, totalImageSize=%d",
 		v.effectiveModelName(), v.baseURL, len(imgBytesList), totalImageSize)
 
 	resp, err := v.client.Do(req)
@@ -186,7 +186,7 @@ func (v *WeKnoraCloudVLM) PredictWithOptions(
 	}
 
 	content := vlmResp.Choices[0].Message.Content
-	logger.Infof(ctx, "[VLM] WeKnoraCloud response received, len=%d", len(content))
+	logger.Infof(ctx, "[VLM] Mint KnowledgeCloud response received, len=%d", len(content))
 	return content, nil
 }
 
